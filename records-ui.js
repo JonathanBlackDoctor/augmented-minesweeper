@@ -1,6 +1,6 @@
-import { LEVELS } from './game.js';
-import { MODULES } from './augments.js';
-import { STORAGE_KEY, MODES, OUTCOMES, loadArchive, saveRecord, mergeArchives, parseBackup, summarize, challengeHash, formatTime } from './records.js';
+import { LEVELS } from './game.js?v=4';
+import { MODULES } from './augments.js?v=4';
+import { STORAGE_KEY, MODES, OUTCOMES, loadArchive, saveRecord, mergeArchives, parseBackup, summarize, challengeHash, formatTime } from './records.js?v=4';
 const $ = id => document.getElementById(id);
 const date = at => new Date(at).toLocaleDateString('ko-KR');
 function download(blob, name) {

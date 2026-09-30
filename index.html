@@ -6,8 +6,8 @@
   <meta name="description" content="숫자를 읽고, 능력을 고르고, 지뢰밭을 돌파하세요. 증강을 조합하는 새로운 지뢰찾기.">
   <title>증강 지뢰찾기 · MINE / SHIFT</title>
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./play-layout.css">
+  <link rel="stylesheet" href="./style.css?v=4">
+  <link rel="stylesheet" href="./play-layout.css?v=4">
 </head>
 <body>
   <header class="topbar"><a class="brand" href="./" aria-label="MINE SHIFT 홈"><span class="brand-icon">✳</span> MINE <span class="slash">/</span> SHIFT</a><span class="edition">AUGMENTED MINESWEEPER <b>04</b></span><div class="header-actions"><button id="open-records" class="quiet">기록실</button><button id="multiplayer" class="multi-button">친구와 대전</button><button id="help" class="quiet">플레이 가이드 <span>↗</span></button></div></header>
@@ -39,6 +39,6 @@
   <dialog id="records-dialog" aria-labelledby="records-title"><div class="dialog-inner"><p class="eyebrow">YOUR EXPEDITION LOG</p><h2 id="records-title">탐사 기록실</h2><div id="record-bests"></div><label for="record-filter">경기 종류</label><select id="record-filter"><option value="solo">솔로</option><option value="challenge">친구 도전</option><option value="race">1대1 대전</option></select><p id="record-summary"></p><div id="record-list"></div><p id="legacy-records"></p><p class="record-note">최근500판·난이도별 솔로 최고 기록은 이 브라우저에 저장됩니다. 사이트 데이터를 지우기 전에 백업하세요. 다른 기기에서는 백업 파일을 복원할 수 있어요. 승률·연승은 보관된 경기 기준입니다.</p><div class="backup-actions"><button id="export-records" class="quiet">기록 백업</button><label class="quiet import-label">백업 복원<input id="import-records" type="file" accept=".json,application/json"></label><button id="close-records" class="primary">닫기</button></div><p id="record-message" role="status"></p></div></dialog>
   <dialog id="share-dialog" aria-labelledby="share-title"><div class="dialog-inner"><p class="eyebrow">SHARE YOUR EXPEDITION</p><h2 id="share-title">탐사 결과</h2><canvas id="result-card" width="1200" height="675" aria-label="탐사 결과 카드"></canvas><div class="share-actions"><button id="share-card" class="primary">공유하기 ↗</button><button id="download-card" class="quiet">PNG 카드 저장</button><button id="copy-challenge" class="quiet">도전 링크 복사</button></div><p id="share-status" role="status"></p><label for="share-link">공유 주소</label><input id="share-link" readonly><button id="close-share" class="quiet">닫기</button></div></dialog>
   <dialog id="challenge-dialog" aria-labelledby="challenge-title"><div class="dialog-inner"><p class="eyebrow">BEAT THIS EXPEDITION</p><h2 id="challenge-title">같은 지뢰밭, 새로운 도전자.</h2><p id="challenge-copy"></p><p>같은 배치·시작 칸·증강 후보로 도전합니다. 증강 조합은 자유롭게 선택하세요. 친구 도전 기록은 솔로 최고 기록과 구분됩니다.</p><div class="result-actions"><button id="accept-challenge" class="primary">도전 시작 ↗</button><button id="cancel-challenge" class="quiet">일반 게임</button></div></div></dialog>
-  <script type="module" src="./app.js"></script>
+  <script type="module" src="./app.js?v=4"></script>
 </body>
 </html>

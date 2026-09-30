@@ -1,4 +1,4 @@
-import { MODULES } from './augments.js';
+import { MODULES } from './augments.js?v=4';
 export const LEVELS = {
   easy: { name: '탐사', rows: 16, cols: 16, mines: 48 },
   normal: { name: '심층', rows: 20, cols: 20, mines: 90 },

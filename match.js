@@ -1,5 +1,5 @@
-import { MODULES } from './augments.js';
-import { LEVELS } from './game.js';
+import { MODULES } from './augments.js?v=4';
+import { LEVELS } from './game.js?v=4';
 export const ROOM_VERSION = 'mineshift-v3';
 export const ROOM_TTL = 2 * 60 * 60 * 1000;
 export const AUGMENTS = MODULES.map(m => m.id);

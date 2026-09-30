@@ -1,5 +1,5 @@
-import { LEVELS } from './game.js';
-import { MODULES } from './augments.js';
+import { LEVELS } from './game.js?v=4';
+import { MODULES } from './augments.js?v=4';
 
 export const RULESET = 'expanded-1';
 export const STORAGE_KEY = 'mineshift-records-v3';
