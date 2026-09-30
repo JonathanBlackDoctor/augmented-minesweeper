@@ -1,0 +1,98 @@
+/* The playing surface, rather than the introductory artwork, owns the viewport. */
+[hidden]{display:none!important}
+.header-actions{display:flex;align-items:center;gap:12px}
+.multi-button{background:#303c29;color:var(--lime);border:1px solid #4e6241;padding:10px 15px;border-radius:7px;min-height:40px}
+.intro,main>footer,.panel-copy{display:none}
+.race-panel{padding:20px;background:#23212d;border:1px solid #474051;border-radius:13px}
+.race-panel h2{font-size:14px;margin:0}
+.race-panel p{font-size:11px;line-height:1.65;color:#b2a8c3;margin:12px 0}
+.race-panel .primary{font-size:11px;padding:10px 13px;min-height:38px}
+.room-code-line,.opponent-line{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.room-code-line code{color:var(--lime);font:18px var(--mono);letter-spacing:2px;user-select:all}
+.room-code-line .quiet{padding:5px 0;font-size:10px;min-height:36px}
+.opponent-line{font-size:10px;margin-top:8px;color:#beb4ca}
+#opponent-bar{background:var(--purple)}
+#ready-controls{margin-top:12px;display:grid;grid-template-columns:45px 1fr;align-items:center;gap:7px}
+#ready-controls label{font-size:11px;color:#bcb4c7}
+#race-ready{grid-column:1/-1}
+#leave-room{padding:7px 0;font-size:10px;min-height:32px}
+select,input{min-width:0;background:#161b22;border:1px solid #48505a;color:var(--text);font:inherit;border-radius:6px;padding:10px;min-height:40px}
+input:focus-visible,select:focus-visible{outline:2px solid var(--lime);outline-offset:2px}
+#race-choice{font-size:11px;padding:6px 8px;min-height:35px}
+.room-form{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:22px}
+.room-form label{grid-column:1/-1;font-size:12px;color:var(--muted)}
+.room-form input{text-transform:uppercase;letter-spacing:1px}
+#room-message{min-height:36px}
+#board{width:var(--board-size,100%);height:var(--board-size,auto);max-width:none!important;grid-template-rows:repeat(var(--cols,9),minmax(0,1fr));margin:auto;gap:4px}
+#board.dense{gap:3px}
+.cell{aspect-ratio:auto;min-height:0;font-size:clamp(13px,2.2vw,20px)}
+.dense .cell{font-size:clamp(12px,1.7vw,17px)}
+.board-wrap{min-height:0}
+#notice{line-height:1.5}
+dialog{max-height:calc(100dvh - 24px);overflow:auto}
+button,select{touch-action:manipulation}
+@media(min-width:700px){
+  html,body{height:100%;overscroll-behavior:none}
+  body{height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+  .topbar{width:100%;max-width:none;flex:0 0 56px;height:56px;padding:0 24px}
+  .brand{font-size:18px}.brand-icon{font-size:29px}
+  main{width:100%;max-width:1380px;flex:1;min-height:0;padding:14px 20px 16px;display:flex}
+  .workspace{width:100%;height:100%;min-height:0;grid-template-columns:minmax(0,1fr) 260px;gap:16px;align-items:stretch}
+  .game-panel{min-height:0;display:grid;grid-template-rows:52px 67px minmax(0,1fr) 53px 36px}
+  .game-toolbar{padding:8px 17px}.level-switch button{padding:7px 12px;min-height:34px}
+  .stats{padding:12px 22px}.stats strong{font-size:25px}.stat-label{margin-bottom:4px}
+  .board-wrap{padding:10px 17px 0;display:flex;flex-direction:column;justify-content:center;overflow:hidden}
+  #start-hint{flex:0 0 27px;height:27px;margin:0;padding-top:8px;font-size:9px}
+  .board-bottom{padding:8px 17px}.mode-switch button{min-height:36px;padding:7px 15px}
+  #notice{font-size:10px;padding:0 17px;display:flex;align-items:center;min-height:0}
+  aside{min-height:0;gap:12px}
+  .augment-panel{padding:18px 16px}.section-heading h2{font-size:14px}
+  .module{padding:12px 0;gap:10px}.module-symbol{width:32px;height:32px;font-size:21px}
+  .module h3{font-size:11px}.module p{font-size:9px}.module button{min-height:37px;padding:7px}
+  .next-augment{margin-top:16px}.next-augment p{font-size:8px}
+  .race-panel{padding:17px 16px}.race-panel p{margin:9px 0}
+  .record{font-size:10px}
+}
+@media(min-width:700px) and (max-height:760px){
+  .topbar{height:48px;flex-basis:48px}
+  main{padding:10px 14px}
+  .workspace{grid-template-columns:minmax(0,1fr) 250px;gap:12px}
+  .game-panel{grid-template-rows:47px 58px minmax(0,1fr) 48px 30px}
+  .stats{padding:8px 19px}.stats strong{font-size:23px}
+  aside{gap:9px}.augment-panel{padding:14px}.module{padding:9px 0}.module-symbol{height:28px;width:28px}
+  .next-augment{margin-top:10px}.next-augment p{margin-top:7px}
+  .race-panel{padding:13px 14px}.race-panel p{font-size:10px;line-height:1.45;margin:7px 0}
+  #ready-controls{margin-top:8px;gap:5px}.record{display:none}
+}
+@media(min-width:700px) and (max-width:900px){
+  .workspace{grid-template-columns:minmax(0,1fr) 230px;gap:12px}
+  main{padding-left:12px;padding-right:12px}
+  .topbar{padding:0 16px}.edition{display:none}
+  .board-wrap{padding-left:10px;padding-right:10px}
+  .game-toolbar{padding:8px 12px}.level-switch button{padding:7px 10px}
+  .level-switch small{display:none}.desktop-tip{display:none}
+  .module{gap:7px}.module-symbol{width:26px}.module p{font-size:8px}
+}
+/* Landscape browser chrome is expensive: place counters beside the board. */
+@media(min-width:900px) and (max-height:820px){
+  .game-panel{grid-template-columns:minmax(0,1fr) 82px;grid-template-rows:47px minmax(0,1fr) 48px 30px}
+  .game-toolbar{grid-column:1/-1;grid-row:1}
+  .stats{grid-column:2;grid-row:2;flex-direction:column;justify-content:center;gap:32px;padding:12px 8px;background:#14181d}
+  .stats>div{min-width:0;text-align:center}.stats strong{font-size:21px}.stat-icon{font-size:16px}
+  .board-wrap{grid-column:1;grid-row:2;padding:10px 6px 10px 12px}
+  #start-hint{display:none}
+  .board-bottom{grid-column:1/-1;grid-row:3}
+  #notice{grid-column:1/-1;grid-row:4}
+  .desktop-tip{display:none}
+}
+@media(max-width:699px){
+  main{padding:12px}.topbar{height:58px;padding:0 12px}.brand{font-size:14px}
+  .header-actions{gap:4px}.multi-button{padding:7px 9px;font-size:11px}.topbar .quiet{font-size:10px;padding:6px}
+  .workspace{grid-template-columns:1fr}.game-panel{display:grid;grid-template-rows:50px 65px minmax(230px,calc(100svh - 290px)) 54px 40px}
+  .board-wrap{display:flex;flex-direction:column;overflow:hidden;padding:10px 12px 0}
+  #start-hint{flex:0 0 27px;margin:0;padding-top:7px}
+  .cell{aspect-ratio:auto}.game-toolbar{padding:7px 12px}.stats{padding:10px 18px}
+  .board-bottom{padding:6px 12px}.mode-switch button{min-height:37px}
+  #notice{font-size:10px;padding:0 13px}.room-form{grid-template-columns:1fr}.room-form label{margin-top:5px}
+  .race-panel{padding:20px}.augment-panel{padding:20px}
+}

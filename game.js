@@ -4,6 +4,18 @@ export const LEVELS = {
   hard: { name: '심연', rows: 16, cols: 16, mines: 48 },
 };
 
+// Separate random streams keep identical multiplayer boards independent of abilities.
+export function seededRandom(seed) {
+  return () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
+}
+
+export function activateCell(game, index, mode = 'reveal') {
+  if (mode === 'scan') return game.scan(index) ? 'scan' : 'noop';
+  if (game.cells[index]?.open) return game.chord(index);
+  if (mode === 'flag') return game.flag(index) ? 'flag' : 'noop';
+  return game.reveal(index);
+}
+
 export class Game {
   constructor(level = 'easy', rng = Math.random) {
     Object.assign(this, LEVELS[level]);
