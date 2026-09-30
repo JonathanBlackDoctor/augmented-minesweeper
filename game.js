@@ -1,3 +1,4 @@
+import { MODULES } from './augments.js';
 export const LEVELS = {
   easy: { name: '탐사', rows: 9, cols: 9, mines: 10 },
   normal: { name: '심층', rows: 12, cols: 12, mines: 24 },
@@ -10,7 +11,7 @@ export function seededRandom(seed) {
 }
 
 export function activateCell(game, index, mode = 'reveal') {
-  if (mode === 'scan') return game.scan(index) ? 'scan' : 'noop';
+  if (MODULES.some(m => m.id === mode && m.target)) return game.usePower(mode, index) ? mode : 'noop';
   if (game.cells[index]?.open) return game.chord(index);
   if (mode === 'flag') return game.flag(index) ? 'flag' : 'noop';
   return game.reveal(index);
@@ -23,9 +24,8 @@ export class Game {
     this.rng = rng;
     this.cells = Array.from({ length: this.rows * this.cols }, () => ({ mine: false, open: false, flag: false, scanned: false, count: 0 }));
     this.state = 'ready';
-    this.shields = 0;
-    this.scans = 0;
-    this.probes = 0;
+    for (const m of MODULES) this[m.resource] = 0;
+    this.equipped = new Set();
     this.started = false;
     this.saved = 0;
   }
@@ -100,6 +100,7 @@ export class Game {
   }
   scan(i) {
     if (this.state !== 'playing' || this.scans <= 0 || !this.cells[i]) return false;
+    if (![i, ...this.neighbors(i)].some(n => !this.cells[n].open && !this.cells[n].scanned)) return false;
     this.scans--;
     for (const n of [i, ...this.neighbors(i)]) this.cells[n].scanned = true;
     return true;
@@ -112,14 +113,55 @@ export class Game {
     for (let n = 0; n < 3 && safe.length && this.state === 'playing'; n++) {
       const j = Math.floor(this.rng() * safe.length);
       this.reveal(safe.splice(j, 1)[0]);
+      for (let k = safe.length - 1; k >= 0; k--) if (this.cells[safe[k]].open) safe.splice(k, 1);
     }
     return true;
   }
   augment(id) {
-    if (id === 'shield') this.shields++;
-    else if (id === 'scan') this.scans += 2;
-    else if (id === 'probe') this.probes++;
-    else return false;
+    const m = MODULES.find(m => m.id === id);
+    if (!m) return false;
+    this[m.resource] += m.amount;
+    this.equipped.add(id);
+    return true;
+  }
+  usePower(id, index) {
+    const m = MODULES.find(m => m.id === id);
+    if (!m || id === 'shield' || this.state !== 'playing' || this[m.resource] <= 0) return false;
+    if (m.target && (!Number.isInteger(index) || !this.cells[index])) return false;
+    if (id === 'scan') return this.scan(index);
+    if (id === 'probe') return this.probe();
+    let targets = [];
+    if (id === 'row' || id === 'column') {
+      targets = this.cells.map((_, i) => i).filter(i => id === 'row' ? Math.floor(i / this.cols) === Math.floor(index / this.cols) : i % this.cols === index % this.cols);
+      targets = targets.filter(i => !this.cells[i].open && !this.cells[i].scanned);
+    } else if (id === 'defuse') {
+      if (!this.cells[index].open && !this.cells[index].flag) targets = [index];
+    } else if (id === 'hunter') {
+      targets = this.cells.map((c, i) => c.mine && !c.flag ? i : -1).filter(i => i >= 0).slice(0, 2);
+    } else if (id === 'audit') {
+      targets = this.cells.map((c, i) => c.flag && (!c.scanned || !c.mine) ? i : -1).filter(i => i >= 0);
+    } else if (id === 'breach') {
+      targets = [index, ...this.neighbors(index)].filter(i => !this.cells[i].mine && !this.cells[i].open && !this.cells[i].flag);
+    } else if (id === 'echo') {
+      targets = this.cells.map((c, i) => !c.open && !c.scanned && this.neighbors(i).some(n => this.cells[n].open) ? i : -1).filter(i => i >= 0).slice(0, 5);
+    }
+    if (!targets.length) return false;
+    this[m.resource]--;
+    let opened = 0;
+    for (const i of targets) {
+      const c = this.cells[i];
+      if (id === 'breach') {
+        if (!c.open && opened < 5) { this.reveal(i); opened++; }
+      } else if (id === 'defuse') {
+        c.scanned = true;
+        if (c.mine) c.flag = true;
+        else this.reveal(i);
+      } else {
+        c.scanned = true;
+        if (id === 'hunter') c.flag = true;
+        if (id === 'audit' && !c.mine) c.flag = false;
+      }
+    }
     return true;
   }
 }

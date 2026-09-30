@@ -31,6 +31,15 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--lime);outline-o
 #notice{line-height:1.5}
 dialog{max-height:calc(100dvh - 24px);overflow:auto}
 button,select{touch-action:manipulation}
+.empty-loadout{font-size:12px;color:var(--muted);line-height:1.7;padding:16px 0}
+#augment-catalog{list-style:none;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}
+#augment-catalog li{background:#20252d;padding:12px;border-radius:8px;font-size:12px;line-height:1.6}
+#augment-catalog b{color:var(--lime);display:block;margin-bottom:5px}
+#augment-catalog span{color:#c0c5cb}
+#race-choice-help{grid-column:1/-1;margin:0;font-size:10px;line-height:1.4}
+#loadout .module button{white-space:nowrap}
+@media(min-width:700px){#loadout .module{padding:9px 0}#loadout .module p{display:none}}
+@media(max-width:699px){#augment-catalog{grid-template-columns:1fr}}
 @media(min-width:700px){
   html,body{height:100%;overscroll-behavior:none}
   body{height:100dvh;display:flex;flex-direction:column;overflow:hidden}

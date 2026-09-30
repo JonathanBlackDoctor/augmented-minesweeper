@@ -36,7 +36,9 @@ test('scanner has finite charges and never reveals cells', () => {
   g.reveal(0); const opened = g.opened;
   assert.equal(g.scan(61), true); assert.equal(g.cells.filter(c => c.scanned).length, 9);
   assert.equal(g.opened, opened); assert.equal(g.scans, 1);
-  g.scan(0); assert.equal(g.scans, 0); assert.equal(g.scan(10), false);
+  assert.equal(g.scan(61), false); assert.equal(g.scans, 1);
+  const fresh = g.cells.findIndex(c => !c.open && !c.scanned);
+  g.scan(fresh); assert.equal(g.scans, 0); assert.equal(g.scan(10), false);
 });
 test('drone opens only safe cells and consumes charges', () => {
   for (let seed = 1; seed <= 30; seed++) {

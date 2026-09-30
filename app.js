@@ -1,10 +1,7 @@
 import { Game, LEVELS, seededRandom, activateCell } from './game.js';
 const $ = id => document.getElementById(id);
-const modules = [
-  { id: 'shield', name: '위상 보호막', symbol: '◇', type: 'PASSIVE / DEFENSE', desc: '지뢰를 한 번 밟아도 생존합니다. 해당 칸에 자동으로 깃발을 꽂아요.', short: '지뢰 충돌 1회 방어', gain: '+1 보호막' },
-  { id: 'scan', name: '광역 스캐너', symbol: '⌖', type: 'ACTIVE / INTELLIGENCE', desc: '선택한 칸 주변 3×3의 지뢰와 안전한 칸을 표시합니다.', short: '3×3 구역 위험 감지', gain: '+2 스캔' },
-  { id: 'probe', name: '탐사 드론', symbol: '⤢', type: 'ACTIVE / EXPLORATION', desc: '숨겨진 안전한 칸을 최대 3개 엽니다. 빈 공간은 연쇄로 열려요.', short: '안전한 칸 최대 3개 열기', gain: '+1 출격' },
-];
+import { MODULES as modules, augmentChoices } from './augments.js';
+let draftSeed = 0;
 let game, mode = 'reveal', pendingLevel = 'easy', earned = 0, picked = 0, startedAt = 0, elapsed = 0, finished = false, focusIndex = 0;
 let race = null, joining = false;
 const canAct = () => !finished && (!race || (race.started && race.client.connected && !race.pendingTerminal && !race.room?.outcome));
@@ -21,11 +18,12 @@ function setMode(next) {
   $('flag-mode').classList.toggle('active', mode === 'flag');
   $('reveal-mode').setAttribute('aria-pressed', String(mode === 'reveal'));
   $('flag-mode').setAttribute('aria-pressed', String(mode === 'flag'));
-  $('board').classList.toggle('scanning', mode === 'scan');
+  $('board').classList.toggle('scanning', modules.some(m => m.id === mode && m.target));
 }
 function start(level = 'easy', options = {}) {
   document.querySelectorAll('dialog[open]').forEach(d => d.close());
   game = new Game(level, options.seed === undefined ? Math.random : seededRandom(options.seed));
+  draftSeed = options.seed ?? crypto.getRandomValues(new Uint32Array(1))[0];
   earned = picked = elapsed = startedAt = 0;
   finished = false;
   focusIndex = 0;
@@ -53,22 +51,22 @@ function render() {
     const label = wrong ? '잘못 표시한 깃발' : showMine ? '지뢰' : c.flag ? '깃발' : c.open ? (c.count ? `주변 지뢰 ${c.count}개` : '빈칸') : c.scanned ? '안전한 칸' : '닫힌 칸';
     button.setAttribute('aria-label', `${Math.floor(i / game.cols) + 1}행 ${i % game.cols + 1}열, ${label}`);
   });
-  $('mines').textContent = game.mines - game.flags;
+  $('mines').textContent = Math.max(0, game.mines - game.flags);
   $('progress').textContent = Math.floor(game.progress * 100);
   $('start-hint').innerHTML = game.started ? `<span>✦</span> ${game.opened} / ${game.safeTotal}개의 안전한 칸 탐사` : '<span>✦</span> 첫 번째 칸은 언제나 안전합니다';
-  $('augment-count').textContent = `${picked} EQUIPPED`;
-  $('loadout').innerHTML = modules.map(m => {
-    const count = game[m.id === 'shield' ? 'shields' : m.id === 'scan' ? 'scans' : 'probes'];
-    return `<div class="module"><span class="module-symbol">${m.symbol}</span><div class="module-info"><h3>${m.name}</h3><p>${m.short}</p></div>${m.id === 'shield' ? `<span class="passive">× ${count}</span>` : `<button data-power="${m.id}" ${!count || game.state !== 'playing' || !canAct() ? 'disabled' : ''} aria-label="${m.name} 사용, ${count}회 남음">사용 ${count}</button>`}</div>`;
-  }).join('');
+  $('augment-count').textContent = `${game.equipped.size}종 장착`;
+  $('loadout').innerHTML = modules.filter(m => game.equipped.has(m.id)).map(m => {
+    const count = game[m.resource];
+    return `<div class="module" title="${m.desc}"><span class="module-symbol">${m.symbol}</span><div class="module-info"><h3>${m.name}</h3><p>${m.short}</p></div>${m.id === 'shield' ? `<span class="passive">× ${count}</span>` : `<button data-power="${m.id}" ${!count || game.state !== 'playing' || !canAct() ? 'disabled' : ''} aria-label="${m.name} 사용, ${count}회 남음">사용 ${count}</button>`}</div>`;
+  }).join('') || '<p class="empty-loadout">10종의 증강으로 나만의 조합을 만드세요.</p>';
   const target = thresholds[earned];
-  $('next-label').textContent = target ? `탐사율 ${Math.round(target * 100)}%` : '모든 증강 획득';
+  $('next-label').textContent = target ? `탐사율 ${Math.round(target * 100)}%` : '증강 선택 완료';
   $('next-bar').style.width = `${target ? Math.min(100, game.progress / target * 100) : 100}%`;
 }
 function chooseAugment(initial = false) {
   $('augment-title').textContent = initial ? '당신의 첫 번째 가능성.' : '한계를 넘어, 한 단계 더.';
   $('augment-copy').textContent = initial ? '이번 탐사를 함께할 증강 하나를 선택하세요.' : `탐사율 ${Math.round(thresholds[earned - 1] * 100)}% 달성! 능력을 추가하세요.`;
-  $('choices').innerHTML = modules.map(m => `<button class="choice" data-augment="${m.id}"><span class="choice-symbol">${m.symbol}</span><small>${m.type}</small><h3>${m.name}</h3><p>${m.desc}</p><span class="choice-footer">${m.gain} <span aria-hidden="true">↗</span></span></button>`).join('');
+  $('choices').innerHTML = augmentChoices(draftSeed, earned).map(m => `<button class="choice" data-augment="${m.id}"><span class="choice-symbol">${m.symbol}</span><small>${m.type}</small><h3>${m.name}</h3><p>${m.desc}</p><span class="choice-footer">${m.gain} <span aria-hidden="true">↗</span></span></button>`).join('');
   $('augment-dialog').showModal();
 }
 function afterAction(result) {
@@ -125,7 +123,13 @@ $('board').addEventListener('click', e => {
   const button = e.target.closest('[data-index]'); if (!button || !canAct()) return;
   const i = Number(button.dataset.index);
   const result = activateCell(game, i, mode);
-  if (result === 'scan') { setMode('reveal'); render(); tell('스캔 완료: ✳는 지뢰, 초록 점은 안전한 칸이에요.'); return; }
+  const power = modules.find(m => m.id === mode && m.target);
+  if (power) {
+    if (result === 'noop') { tell('이 칸에는 사용할 효과가 없어요. 횟수는 유지됩니다. 다른 칸을 선택하세요.'); return; }
+    setMode('reveal'); afterAction('open');
+    if (!finished) tell(`${power.name} 사용 완료. ${power.id === 'breach' ? '안전한 칸을 열었어요.' : '✳는 지뢰, 초록 점은 안전한 칸이에요.'}`);
+    return;
+  }
   if (result === 'flag') { render(); return; }
   afterAction(result);
 });
@@ -147,8 +151,15 @@ $('board').addEventListener('keydown', e => {
 });
 $('loadout').addEventListener('click', e => {
   const button = e.target.closest('[data-power]'); if (!button || button.disabled || !canAct()) return;
-  if (button.dataset.power === 'scan') { setMode(mode === 'scan' ? 'reveal' : 'scan'); tell(mode === 'scan' ? '스캔할 구역의 중심 칸을 선택하세요. 탐색 버튼으로 취소할 수 있어요.' : '탐색 모드로 돌아왔어요.'); }
-  else { setMode('reveal'); if (game.probe()) { afterAction('open'); if (!finished) tell('드론이 안전한 칸을 열었어요.'); } else tell('깃발이 없는 안전한 칸이 없어요. 깃발을 확인하세요.'); }
+  const power = modules.find(m => m.id === button.dataset.power);
+  if (power.target) {
+    setMode(mode === power.id ? 'reveal' : power.id);
+    tell(mode === 'reveal' ? '탐색 모드로 돌아왔어요.' : `${power.name}: ${power.short}. 칸을 선택하세요. 탐색 버튼으로 취소할 수 있어요.`);
+  } else {
+    setMode('reveal');
+    if (game.usePower(power.id)) { afterAction('open'); if (!finished) tell(`${power.name} 사용 완료. ${power.short}.`); }
+    else tell('효과를 적용할 칸이 없어요. 사용 횟수는 유지됩니다.');
+  }
 });
 $('reveal-mode').onclick = () => { setMode('reveal'); tell('탐색 모드: 칸을 눌러 엽니다.'); };
 $('flag-mode').onclick = () => { setMode('flag'); tell('깃발 모드: 닫힌 칸은 깃발, 열린 숫자는 주변 열기.'); };
@@ -193,6 +204,7 @@ function displayRace() {
   $('ready-controls').hidden = room.meta.phase !== 'lobby';
   $('race-ready').disabled = !!self.ready || !race.client.connected;
   $('race-choice').disabled = !!self.ready;
+  $('race-choice-help').textContent = modules.find(m => m.id === $('race-choice').value)?.desc || '';
   $('race-ready').textContent = self.ready ? '상대 준비 기다리는 중' : '준비 완료';
   $('race-status').textContent = !race.client.connected ? '연결이 끊겨 조작을 잠시 멈췄어요.' : room.meta.phase === 'closed' ? '방장이 방을 닫았어요. 방 나가기를 눌러 주세요.' : room.outcome ? '대전이 끝났습니다.' : !other ? '코드 또는 초대 링크를 친구에게 보내세요.' : !other.online ? '상대 연결을 기다립니다. 방 나가기로 종료할 수 있어요.' : !race.started ? '첫 증강을 고르고 준비 완료를 눌러 주세요.' : '먼저 모든 안전한 칸을 열면 승리!';
 }
@@ -206,7 +218,7 @@ async function enterRace(code) {
     candidate = new OnlineRoom(room => {
       if (race?.client !== candidate || !room) return;
       race.room = room;
-      if (!race.initialized) { race.initialized = true; start(room.meta.level, { seed: room.meta.seed }); tell('첫 증강을 고르고 준비 완료를 눌러 주세요.'); }
+      if (!race.initialized) { $('race-choice').innerHTML = modules.map(m => `<option value="${m.id}">${m.name} · ${m.gain}</option>`).join(''); race.initialized = true; start(room.meta.level, { seed: room.meta.seed }); tell('첫 증강을 고르고 준비 완료를 눌러 주세요.'); }
       displayRace();
       if (room.outcome) finishRace();
     }, connected => {
@@ -287,6 +299,8 @@ setInterval(() => {
   }
   if (startedAt && !finished) { elapsed = Math.floor((performance.now() - startedAt) / 1000); $('timer').textContent = formatTime(elapsed); }
 }, 250);
+$('augment-catalog').innerHTML = modules.map(m => `<li><b>${m.symbol} ${m.name} · ${m.gain}</b><span>${m.desc}</span></li>`).join('');
+$('race-choice').addEventListener('change', () => { $('race-choice-help').textContent = modules.find(m => m.id === $('race-choice').value)?.desc || ''; });
 start();
 function applyInvitation() {
   const invitation = /^#room=([A-HJ-NP-Z2-9]{8})$/.exec(location.hash);

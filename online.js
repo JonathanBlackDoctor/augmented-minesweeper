@@ -19,7 +19,7 @@ export class OnlineRoom {
     this.isHost = !code;
     this.code = code ? roomCode(code) : this.generateCode();
     if (!validCode(this.code)) throw new Error('방 코드는 영문·숫자 8자리입니다.');
-    this.uid = this.isHost ? `mineshift-v1-${this.code}` : `mineshift-player-${crypto.randomUUID()}`;
+    this.uid = this.isHost ? `${ROOM_VERSION}-${this.code}` : `mineshift-player-${crypto.randomUUID()}`;
     this.peer = new window.Peer(this.uid, { debug: 0 });
     return new Promise((resolve, reject) => {
       let settled = false;
@@ -36,7 +36,7 @@ export class OnlineRoom {
           this.room = newRoom(this.uid, level, crypto.getRandomValues(new Uint32Array(1))[0], Date.now());
           this.connected = true; this.onConnection(true); this.publish(); succeed();
         } else {
-          const conn = this.peer.connect(`mineshift-v1-${this.code}`, { reliable: true, serialization: 'json', metadata: { protocol: ROOM_VERSION } });
+          const conn = this.peer.connect(`${ROOM_VERSION}-${this.code}`, { reliable: true, serialization: 'json', metadata: { protocol: ROOM_VERSION } });
           this.bind(conn, succeed);
         }
       });
@@ -94,7 +94,7 @@ export class OnlineRoom {
   }
   validSnapshot(room) {
     return room?.meta?.kind === ROOM_VERSION && LEVELS[room.meta.level] && Number.isInteger(room.meta.seed)
-      && room.meta.hostUid === `mineshift-v1-${this.code}` && !!room.players?.[this.uid]
+      && room.meta.hostUid === `${ROOM_VERSION}-${this.code}` && !!room.players?.[this.uid]
       && Object.keys(room.players).length <= 2 && ['lobby', 'countdown', 'finished', 'closed'].includes(room.meta.phase)
       && (room.meta.phase !== 'countdown' || Number.isFinite(room.meta.startAt));
   }
