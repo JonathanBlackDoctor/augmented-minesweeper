@@ -1,15 +1,16 @@
 import { Game, LEVELS, seededRandom, activateCell } from './game.js';
+import { RULESET, formatTime, parseChallenge } from './records.js';
+import { createRecordsUI } from './records-ui.js';
 const $ = id => document.getElementById(id);
+let run = null, lastRecord = null, pendingChallenge = null, precision = false;
+const records = createRecordsUI(() => run && !run.recorded ? run.id : '');
 import { MODULES as modules, augmentChoices } from './augments.js';
 let draftSeed = 0;
 let game, mode = 'reveal', pendingLevel = 'easy', earned = 0, picked = 0, startedAt = 0, elapsed = 0, finished = false, focusIndex = 0;
 let race = null, joining = false;
 const canAct = () => !finished && (!race || (race.started && race.client.connected && !race.pendingTerminal && !race.room?.outcome));
 const thresholds = [.25, .55, .8];
-const formatTime = seconds => `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
-function readBest(level) {
-  try { const value = localStorage.getItem(`mineshift-best-v1-${level}`); return value !== null && /^\d+$/.test(value) ? Number(value) : null; } catch { return null; }
-}
+const readBest = level => records.best(level);
 function updateBest() { const best = readBest(game.level); $('best').textContent = best === null ? '아직 기록이 없어요' : formatTime(best); }
 function tell(message) { $('notice').textContent = message; }
 function setMode(next) {
@@ -21,16 +22,21 @@ function setMode(next) {
   $('board').classList.toggle('scanning', modules.some(m => m.id === mode && m.target));
 }
 function start(level = 'easy', options = {}) {
+  if (game?.started && !finished) recordRun(run?.mode === 'race' ? 'interrupted' : 'abandoned');
   document.querySelectorAll('dialog[open]').forEach(d => d.close());
-  game = new Game(level, options.seed === undefined ? Math.random : seededRandom(options.seed));
   draftSeed = options.seed ?? crypto.getRandomValues(new Uint32Array(1))[0];
+  game = new Game(level, seededRandom(draftSeed));
+  run = { id: crypto.randomUUID(), seed: draftSeed, mode: options.race ? 'race' : options.challenge ? 'challenge' : 'solo', challenge: options.challenge || null, picks: [], recorded: false };
+  precision = matchMedia('(pointer: coarse)').matches && game.cols >= 20;
+  updatePrecision();
   earned = picked = elapsed = startedAt = 0;
   finished = false;
   focusIndex = 0;
   setMode('reveal');
   $('timer').textContent = '00:00';
   $('board').style.setProperty('--cols', game.cols);
-  $('board').classList.toggle('dense', game.cols > 9);
+  $('board').classList.toggle('dense', true);
+  $('board').classList.toggle('large', game.cols >= 20);
   $('board').replaceChildren(...game.cells.map((_, i) => {
     const button = document.createElement('button');
     button.className = 'cell';
@@ -40,7 +46,7 @@ function start(level = 'easy', options = {}) {
   }));
   document.querySelectorAll('[data-level]').forEach(b => { b.classList.toggle('selected', b.dataset.level === level); b.setAttribute('aria-pressed', String(b.dataset.level === level)); });
   updateBest(); render(); fitBoard();
-  if (options.seed === undefined) chooseAugment(true);
+  if (!options.race) chooseAugment(true);
 }
 function render() {
   [...$('board').children].forEach((button, i) => {
@@ -71,6 +77,7 @@ function chooseAugment(initial = false) {
 }
 function afterAction(result) {
   if (game.started && !startedAt) startedAt = performance.now();
+  if (game.state === 'playing' && result !== 'noop') recordRun(run.mode === 'race' ? 'interrupted' : 'abandoned', false);
   if (result === 'shield') tell('보호막 작동! 지뢰를 막고 해당 칸에 깃발을 꽂았어요.');
   else if (result !== 'noop') tell(mode === 'scan' ? '스캔할 구역의 중심 칸을 선택하세요.' : '숫자를 따라 안전한 칸을 찾아보세요.');
   if (race) race.client.progress(game.progress * 100, game.state).catch(() => tell('진행도 전송을 재시도합니다.'));
@@ -88,20 +95,19 @@ function finish() {
   elapsed = startedAt ? Math.floor((performance.now() - startedAt) / 1000) : 0;
   $('timer').textContent = formatTime(elapsed);
   const won = game.state === 'won';
-  let record = false;
-  if (won) {
-    const previous = readBest(game.level);
-    if (previous === null || elapsed < previous) {
-      try { localStorage.setItem(`mineshift-best-v1-${game.level}`, String(elapsed)); record = true; } catch { /* Private mode can disable storage. */ }
-    }
-    updateBest();
-  }
+  const previous = readBest(game.level);
+  const record = won && run.mode === 'solo' && (previous === null || elapsed < previous);
+  const saved = recordRun(won ? 'won' : 'lost');
+  $('record-saved').textContent = saved ? '기록실에 저장했어요. 결과 카드와 도전 링크를 공유할 수 있습니다.' : '브라우저에 저장하지 못했어요. 결과 카드를 저장하거나 기록실에서 백업하세요.';
+  updateBest();
   $('result-icon').textContent = won ? '✦' : '✳';
   $('result-icon').style.color = won ? 'var(--lime)' : '#f0a0a0';
   $('result-kicker').textContent = won ? 'EXPEDITION COMPLETE' : 'SIGNAL LOST';
   $('result-title').textContent = won ? '모든 가능성을 열었어요.' : '이번 탐사는 여기까지.';
   $('result-copy').textContent = `${LEVELS[game.level].name} · ${formatTime(elapsed)} · 탐사율 ${Math.floor(game.progress * 100)}%${record ? ' · 새로운 최고 기록!' : ''}`;
+  if (run.challenge?.target != null) $('result-copy').textContent += won ? (elapsed < run.challenge.target ? ` · 친구 기록보다 ${run.challenge.target - elapsed}초 빠름!` : elapsed === run.challenge.target ? ' · 친구와 동률!' : ` · 친구 기록보다 ${elapsed - run.challenge.target}초 늦음`) : ` · 목표 ${formatTime(run.challenge.target)}`;
   tell(won ? '탐사 성공! 모든 안전한 칸을 열었습니다.' : '지뢰를 밟았어요. 새로운 증강 조합으로 다시 도전해 보세요.');
+  $('result-share').disabled = false;
   $('result-dialog').showModal();
 }
 function requestRestart(level) {
@@ -112,16 +118,16 @@ function requestRestart(level) {
 }
 $('choices').addEventListener('click', e => {
   const button = e.target.closest('[data-augment]'); if (!button) return;
-  game.augment(button.dataset.augment); picked++;
+  game.augment(button.dataset.augment); run.picks.push(button.dataset.augment); picked++;
   $('augment-dialog').close();
   tell(`${modules.find(m => m.id === button.dataset.augment).name} 장착 완료. ${game.started ? '계속 탐사하세요!' : '원하는 칸을 눌러 시작하세요.'}`);
   if (thresholds[earned] && game.progress >= thresholds[earned]) { earned++; chooseAugment(); }
   render();
+  if (run.challenge && !game.started) { game.reveal(run.challenge.first); afterAction('open'); }
 });
 $('augment-dialog').addEventListener('cancel', e => e.preventDefault());
-$('board').addEventListener('click', e => {
-  const button = e.target.closest('[data-index]'); if (!button || !canAct()) return;
-  const i = Number(button.dataset.index);
+function actOnCell(i) {
+  if (!canAct()) return;
   const result = activateCell(game, i, mode);
   const power = modules.find(m => m.id === mode && m.target);
   if (power) {
@@ -132,6 +138,11 @@ $('board').addEventListener('click', e => {
   }
   if (result === 'flag') { render(); return; }
   afterAction(result);
+}
+$('board').addEventListener('click', e => {
+  const button = e.target.closest('[data-index]'); if (!button || !canAct()) return;
+  const i = Number(button.dataset.index);
+  if (precision && e.detail !== 0) openPrecision(i); else actOnCell(i);
 });
 $('board').addEventListener('contextmenu', e => {
   const button = e.target.closest('[data-index]'); if (!button) return;
@@ -167,6 +178,7 @@ document.addEventListener('keydown', e => { if (e.key.toLowerCase() === 'f' && !
 document.querySelectorAll('[data-level]').forEach(b => b.onclick = () => requestRestart(b.dataset.level));
 $('restart').onclick = () => requestRestart(game.level);
 $('play-again').onclick = () => race ? leaveRace() : start(game.level);
+$('result-share').onclick = () => { if (lastRecord) records.showCard(lastRecord); };
 $('view-board').onclick = () => $('result-dialog').close();
 $('help').onclick = () => $('help-dialog').showModal();
 $('close-help').onclick = () => $('help-dialog').close();
@@ -218,7 +230,7 @@ async function enterRace(code) {
     candidate = new OnlineRoom(room => {
       if (race?.client !== candidate || !room) return;
       race.room = room;
-      if (!race.initialized) { $('race-choice').innerHTML = modules.map(m => `<option value="${m.id}">${m.name} · ${m.gain}</option>`).join(''); race.initialized = true; start(room.meta.level, { seed: room.meta.seed }); tell('첫 증강을 고르고 준비 완료를 눌러 주세요.'); }
+      if (!race.initialized) { $('race-choice').innerHTML = modules.map(m => `<option value="${m.id}">${m.name} · ${m.gain}</option>`).join(''); race.initialized = true; start(room.meta.level, { seed: room.meta.seed, race: true }); tell('첫 증강을 고르고 준비 완료를 눌러 주세요.'); }
       displayRace();
       if (room.outcome) finishRace();
     }, connected => {
@@ -241,7 +253,8 @@ function friendlyError(error) {
 }
 function startRace() {
   race.started = true;
-  game.augment(race.room.players[race.client.uid].choice); picked = 1;
+  const firstAugment = race.room.players[race.client.uid].choice;
+  game.augment(firstAugment); run.picks.push(firstAugment); picked = 1;
   game.reveal(Math.floor(game.rows / 2) * game.cols + Math.floor(game.cols / 2));
   startedAt = performance.now() - Math.max(0, race.client.now() - race.room.meta.startAt);
   displayRace(); afterAction('open');
@@ -262,6 +275,11 @@ function finishRace() {
   $('result-icon').style.color = win ? 'var(--lime)' : '#f0a0a0';
   $('result-kicker').textContent = 'FRIENDLY MATCH COMPLETE';
   const interrupted = race.room.outcome.reason === 'disconnect';
+  elapsed = startedAt ? Math.floor((performance.now() - startedAt) / 1000) : 0;
+  $('timer').textContent = formatTime(elapsed);
+  const saved = recordRun(interrupted ? 'interrupted' : win ? 'won' : 'lost');
+  $('record-saved').textContent = saved ? '대전 결과를 기록실에 저장했어요.' : '기록 저장이 불가능합니다. 카드를 저장하거나 기록실에서 백업하세요.';
+  $('result-share').disabled = !lastRecord || lastRecord.id !== run.id;
   $('result-title').textContent = interrupted ? '연결이 끊겨 대전이 중단됐어요.' : win ? '이번 대전에서 승리했어요!' : '다음 탐사에서 다시 만나요.';
   const reasons = { clear: '안전한 칸을 먼저 모두 열어 승부가 결정됐어요.', mine: '지뢰를 밟아 승부가 결정됐어요.', leave: '상대 또는 내가 방을 나가 대전이 종료됐어요.', disconnect: '이 경기는 승패를 기록하지 않아요. 새 방을 만들어 다시 연결해 주세요.' };
   $('result-copy').textContent = reasons[race.room.outcome.reason];
@@ -270,6 +288,7 @@ function finishRace() {
   render(); $('result-dialog').showModal();
 }
 function leaveRace() {
+  if (race?.started && !finished) recordRun('lost');
   const current = race; race = null;
   current?.client.close().catch(() => {});
   if (location.hash.startsWith('#room=')) history.replaceState(null, '', location.pathname + location.search);
@@ -303,8 +322,60 @@ $('augment-catalog').innerHTML = modules.map(m => `<li><b>${m.symbol} ${m.name} 
 $('race-choice').addEventListener('change', () => { $('race-choice-help').textContent = modules.find(m => m.id === $('race-choice').value)?.desc || ''; });
 start();
 function applyInvitation() {
+  if (location.hash.startsWith('#challenge=')) {
+    const challenge = parseChallenge(location.hash);
+    if (!challenge) { tell('유효하지 않은 도전 링크입니다. 일반 게임을 시작하세요.'); return; }
+    if (race) { tell('대전 종료 후 도전 링크를 다시 열어 주세요.'); return; }
+    pendingChallenge = challenge;
+    $('augment-dialog').close();
+    const level = LEVELS[challenge.level];
+    $('challenge-copy').textContent = `${level.name} · ${level.rows}×${level.cols} · 지뢰 ${level.mines}개${challenge.target === null ? ' · 완주에 도전하세요!' : ` · 친구의 목표 기록 ${formatTime(challenge.target)}`}`;
+    if (!$('challenge-dialog').open) $('challenge-dialog').showModal();
+    return;
+  }
   const invitation = /^#room=([A-HJ-NP-Z2-9]{8})$/.exec(location.hash);
   if (invitation && !race) { $('augment-dialog').close(); $('join-code').value = invitation[1]; if (!$('room-dialog').open) openRoomDialog(); }
 }
 window.addEventListener('hashchange', applyInvitation);
 applyInvitation();
+
+function recordRun(outcome, final = true) {
+  if (!run || !game.started || (run.recorded && final)) return false;
+  const record = { rules: RULESET, id: run.id, level: game.level, mode: run.mode, outcome, at: Date.now(), seconds: Math.min(604800, startedAt ? Math.floor((performance.now() - startedAt) / 1000) : 0), seed: run.seed, first: game.first, progress: Math.floor(game.progress * 100), picks: [...run.picks] };
+  const saved = records.add(record);
+  if (final) { run.recorded = true; lastRecord = record; }
+  return saved;
+}
+function updatePrecision() {
+  $('precision').textContent = `정밀 터치 ${precision ? 'ON' : 'OFF'}`;
+  $('precision').setAttribute('aria-pressed', String(precision));
+}
+function openPrecision(index) {
+  const startRow = Math.max(0, Math.min(game.rows - 5, Math.floor(index / game.cols) - 2));
+  const startCol = Math.max(0, Math.min(game.cols - 5, index % game.cols - 2));
+  const buttons = [];
+  for (let r = startRow; r < startRow + 5; r++) for (let c = startCol; c < startCol + 5; c++) {
+    const i = r * game.cols + c, button = $('board').children[i].cloneNode(true);
+    button.tabIndex = 0; button.classList.toggle('chosen', i === index); buttons.push(button);
+  }
+  $('precision-grid').replaceChildren(...buttons);
+  const action = mode === 'flag' ? '깃발 / 숫자 주변 열기' : modules.find(m => m.id === mode)?.name || '탐색';
+  $('precision-copy').textContent = `${startRow + 1}~${startRow + 5}행 · ${startCol + 1}~${startCol + 5}열 / ${action}`;
+  $('precision-dialog').showModal();
+}
+$('precision').onclick = () => { precision = !precision; updatePrecision(); };
+$('close-precision').onclick = () => $('precision-dialog').close();
+$('precision-grid').onclick = event => {
+  const button = event.target.closest('[data-index]'); if (!button) return;
+  $('precision-dialog').close(); actOnCell(Number(button.dataset.index));
+};
+$('accept-challenge').onclick = () => {
+  if (!pendingChallenge || race) return;
+  const challenge = pendingChallenge; pendingChallenge = null;
+  history.replaceState(null, '', location.pathname + location.search);
+  start(challenge.level, { seed: challenge.seed, challenge });
+};
+function cancelChallenge() { pendingChallenge = null; $('challenge-dialog').close(); history.replaceState(null, '', location.pathname + location.search); if (!picked) chooseAugment(true); }
+$('cancel-challenge').onclick = cancelChallenge;
+$('challenge-dialog').addEventListener('cancel', event => { event.preventDefault(); cancelChallenge(); });
+window.addEventListener('pagehide', () => { if (game.started && !finished && !run.recorded) recordRun(run.mode === 'race' ? 'interrupted' : 'abandoned', false); });

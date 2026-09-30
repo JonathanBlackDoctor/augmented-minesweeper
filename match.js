@@ -1,6 +1,6 @@
 import { MODULES } from './augments.js';
 import { LEVELS } from './game.js';
-export const ROOM_VERSION = 'mineshift-v2';
+export const ROOM_VERSION = 'mineshift-v3';
 export const ROOM_TTL = 2 * 60 * 60 * 1000;
 export const AUGMENTS = MODULES.map(m => m.id);
 export function roomCode(value) { return String(value).toUpperCase().replace(/[\s-]/g, ''); }

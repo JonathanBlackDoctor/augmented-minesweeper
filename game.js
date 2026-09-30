@@ -1,8 +1,8 @@
 import { MODULES } from './augments.js';
 export const LEVELS = {
-  easy: { name: '탐사', rows: 9, cols: 9, mines: 10 },
-  normal: { name: '심층', rows: 12, cols: 12, mines: 24 },
-  hard: { name: '심연', rows: 16, cols: 16, mines: 48 },
+  easy: { name: '탐사', rows: 16, cols: 16, mines: 48 },
+  normal: { name: '심층', rows: 20, cols: 20, mines: 90 },
+  hard: { name: '심연', rows: 24, cols: 24, mines: 144 },
 };
 
 // Separate random streams keep identical multiplayer boards independent of abilities.
@@ -37,6 +37,7 @@ export class Game {
     return result;
   }
   seed(first) {
+    this.first = first;
     const safe = new Set([first, ...this.neighbors(first)]);
     const available = this.cells.map((_, i) => i).filter(i => !safe.has(i));
     for (let i = available.length - 1; i > 0; i--) {

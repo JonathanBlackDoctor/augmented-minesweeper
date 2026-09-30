@@ -26,7 +26,7 @@ test('drafts offer three unique candidates, vary and are identical for both play
 });
 test('row and column radar cover exactly one line and repeat use is free', () => {
   for (const id of ['row', 'column']) {
-    const g = board(); g.augment(id); const before = g.opened, i = 136;
+    const g = board(); g.augment(id); const before = g.opened, i = 8 * g.cols + 8;
     assert.equal(activateCell(g, i, id), id);
     for (let n = 0; n < g.cells.length; n++) {
       const inLine = id === 'row' ? Math.floor(n / g.cols) === 8 : n % g.cols === 8;
