@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#111419">
+  <meta name="description" content="숫자를 읽고, 능력을 고르고, 지뢰밭을 돌파하세요. 증강을 조합하는 새로운 지뢰찾기.">
+  <title>증강 지뢰찾기 · MINE / SHIFT</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="./" aria-label="MINE SHIFT 홈"><span class="brand-icon">✳</span> MINE <span class="slash">/</span> SHIFT</a><span class="edition">AUGMENTED MINESWEEPER <b>01</b></span><button id="help" class="quiet">플레이 가이드 <span>↗</span></button></header>
+  <main>
+    <section class="intro"><div><p class="eyebrow"><span class="live-dot"></span> CLASSIC RULES. NEW POSSIBILITIES.</p><h1>익숙한 지뢰밭,<br><span>새로운 가능성.</span></h1><p class="intro-copy">숫자를 읽고, 증강을 고르고, 한 칸 더 나아가세요.</p></div><div class="intro-side"><span class="orbit">✳</span><p>운에 맡기기 전에,<br>당신의 능력을 선택하세요.</p></div></section>
+    <div class="workspace">
+      <section class="game-panel" aria-label="지뢰찾기 게임">
+        <div class="game-toolbar"><div class="level-switch" aria-label="난이도"><button data-level="easy" class="selected">탐사 <small>9×9</small></button><button data-level="normal">심층 <small>12×12</small></button><button data-level="hard">심연 <small>16×16</small></button></div><button id="restart" class="icon-button" aria-label="새 게임">↻</button></div>
+        <div class="stats"><div><span class="stat-label">남은 지뢰</span><strong><span class="stat-icon">⚑</span> <span id="mines">10</span></strong></div><div class="timer-stat"><span class="stat-label">탐사 시간</span><strong id="timer">00:00</strong></div><div class="progress-stat"><span class="stat-label">탐사율</span><strong><span id="progress">0</span><small>%</small></strong></div></div>
+        <div class="board-wrap"><div id="board" role="group" aria-label="지뢰밭"></div><div id="start-hint"><span>✦</span> 첫 번째 칸은 언제나 안전합니다</div></div>
+        <div class="board-bottom"><div class="mode-switch"><button id="reveal-mode" class="active" aria-pressed="true">↖ 탐색</button><button id="flag-mode" aria-pressed="false">⚑ 깃발 <kbd>F</kbd></button></div><span class="desktop-tip">우클릭으로 깃발 · 숫자 클릭으로 주변 열기</span></div>
+        <div id="notice" role="status" aria-live="polite">증강을 선택하면 탐사를 시작할 수 있어요.</div>
+      </section>
+      <aside>
+        <section class="augment-panel"><div class="section-heading"><h2><span>✦</span> 증강 모듈</h2><span id="augment-count" class="tag">0 EQUIPPED</span></div><p class="panel-copy">작은 선택이, 다음 한 수를 바꿉니다.</p><div id="loadout"></div><div class="next-augment"><div><span>다음 증강까지</span><b id="next-label">탐사율 25%</b></div><div class="track"><div id="next-bar"></div></div><p>탐사율 25% · 55% · 80% 달성 시 선택</p></div></section>
+        <section class="mission"><span class="eyebrow">FIELD NOTES / 001</span><h3>서두르지 않아도 좋아요.</h3><p>숫자는 주변 8칸에 숨어 있는<br>지뢰의 개수입니다. 안전한 칸을<br>모두 열면 탐사 성공!</p><div class="mini-grid" aria-hidden="true"><i></i><i>1</i><i></i><i>1</i><i class="mini-mine">✳</i><i>1</i><i></i><i>1</i><i></i></div></section>
+        <section class="record"><span>⌁ 이 기기의 최고 기록</span><strong id="best">—</strong></section>
+      </aside>
+    </div>
+    <footer><span>한 칸의 추론. 한 번의 진화.</span><span>DESIGNED TO THINK DIFFERENTLY.</span></footer>
+  </main>
+  <dialog id="augment-dialog" aria-labelledby="augment-title"><div class="dialog-inner"><p class="eyebrow">CHOOSE YOUR AUGMENT</p><h2 id="augment-title">당신의 첫 번째 가능성.</h2><p id="augment-copy">이번 탐사를 함께할 증강 하나를 선택하세요.</p><div id="choices"></div><p class="dialog-note">같은 증강을 다시 고르면 사용 횟수가 추가됩니다.</p></div></dialog>
+  <dialog id="help-dialog" aria-labelledby="help-title"><div class="dialog-inner"><p class="eyebrow">EXPLORER'S MANUAL</p><h2 id="help-title">탐사 가이드</h2><ul class="guide"><li><b>탐색</b> 칸을 눌러 열어요. 숫자는 주변 8칸의 지뢰 수예요.</li><li><b>깃발</b> 우클릭 또는 깃발 모드로 의심되는 칸에 표시해요.</li><li><b>빠른 열기</b> 숫자만큼 깃발을 꽂고 그 숫자를 누르면 주변을 열어요. 깃발이 틀리면 지뢰를 밟을 수 있어요.</li><li><b>증강</b> 시작할 때, 탐사율 25%·55%·80%에서 능력을 골라요. 능력 사용 중에는 시간이 계속 흘러요.</li><li><b>키보드</b> 방향키로 칸 이동, Enter/Space로 선택, F로 깃발 모드를 전환해요.</li><li><b>승리</b> 지뢰를 제외한 모든 칸을 열면 성공! 첫 클릭과 주변 칸은 안전해요. 이후에는 추측이 필요할 수 있어요.</li></ul><button id="close-help" class="primary">탐사로 돌아가기 ↗</button></div></dialog>
+  <dialog id="result-dialog" aria-labelledby="result-title"><div class="dialog-inner result-inner"><div id="result-icon">✦</div><p class="eyebrow" id="result-kicker">EXPEDITION COMPLETE</p><h2 id="result-title">탐사 성공!</h2><p id="result-copy"></p><div class="result-actions"><button id="play-again" class="primary">다시 도전 ↗</button><button id="view-board" class="quiet">지뢰밭 살펴보기</button></div></div></dialog>
+  <dialog id="confirm-dialog" aria-labelledby="confirm-title"><div class="dialog-inner"><p class="eyebrow">NEW EXPEDITION</p><h2 id="confirm-title">새로운 탐사를 시작할까요?</h2><p>진행 중인 탐사와 증강이 초기화됩니다.</p><div class="result-actions"><button id="confirm-restart" class="primary">새로 시작</button><button id="cancel-restart" class="quiet">계속 탐사</button></div></div></dialog>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
