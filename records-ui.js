@@ -1,6 +1,6 @@
-import { LEVELS } from './game.js?v=5';
-import { MODULES } from './augments.js?v=5';
-import { STORAGE_KEY, MODES, OUTCOMES, loadArchive, saveRecord, mergeArchives, parseBackup, summarize, challengeHash, formatTime } from './records.js?v=5';
+import { LEVELS } from './game.js?v=6';
+import { MODULES } from './augments.js?v=6';
+import { STORAGE_KEY, MODES, OUTCOMES, loadArchive, saveRecord, mergeArchives, parseBackup, summarize, challengeHash, formatTime } from './records.js?v=6';
 const $ = id => document.getElementById(id);
 const date = at => new Date(at).toLocaleDateString('ko-KR');
 function download(blob, name) {
@@ -23,7 +23,7 @@ export function createRecordsUI(activeId) {
     const visible = { ...archive, runs: archive.runs.filter(r => r.id !== activeId()) };
     const stats = summarize(visible, mode);
     $('record-summary').textContent = `${MODES[mode]} ${stats.played}판 · ${stats.wins}승 · 승률 ${stats.winRate}% · 현재 ${stats.streak}연승`;
-    $('record-bests').innerHTML = Object.entries(LEVELS).map(([id, level]) => {
+    $('record-bests').innerHTML = Object.entries(LEVELS).filter(([, level]) => !level.legacy).map(([id, level]) => {
       const r = archive.best[id];
       return `<button class="best-tile" ${r ? `data-record="${r.id}"` : 'disabled'}><span>${level.name} · ${level.rows}×${level.cols}</span><strong>${r ? formatTime(r.seconds) : '—'}</strong><small>솔로 최고 기록</small></button>`;
     }).join('');
