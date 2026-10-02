@@ -1,9 +1,11 @@
-import { MODULES } from './augments.js?v=5';
+import { MODULES } from './augments.js?v=6';
 export const LEVELS = {
   easy: { name: '탐사', rows: 16, cols: 16, mines: 48 },
   normal: { name: '심층', rows: 20, cols: 20, mines: 90 },
   hard: { name: '심연', rows: 24, cols: 24, mines: 144 },
-  extreme: { name: '특이점', rows: 28, cols: 28, mines: 220 },
+  // Kept for old records/challenge links created before the board rebalance.
+  extreme: { name: '특이점 (이전)', rows: 28, cols: 28, mines: 220, legacy: true },
+  singularity: { name: '특이점', rows: 30, cols: 30, mines: 200 },
 };
 
 // Separate random streams keep identical multiplayer boards independent of abilities.
@@ -14,6 +16,8 @@ export function seededRandom(seed) {
 export function activateCell(game, index, mode = 'reveal') {
   if (MODULES.some(m => m.id === mode && m.target)) return game.usePower(mode, index) ? mode : 'noop';
   if (game.cells[index]?.open) return game.chord(index);
+  // The very first primary click always opens the board, even in flag mode.
+  if (!game.started) return game.reveal(index);
   if (mode === 'flag') return game.flag(index) ? 'flag' : 'noop';
   return game.reveal(index);
 }
@@ -100,12 +104,29 @@ export class Game {
     }
     return result;
   }
+  resolveKnown(indices) {
+    if (this.state !== 'playing') return false;
+    const targets = [...new Set(indices)].filter(i => this.cells[i] && (!this.cells[i].open || this.cells[i].flag));
+    if (!targets.length) return false;
+    // Mark every resolved mine first so cascades can never obscure the information.
+    for (const i of targets) {
+      const c = this.cells[i];
+      c.scanned = true;
+      if (c.mine) c.flag = true;
+      else if (c.flag) c.flag = false;
+    }
+    for (const i of targets) {
+      const c = this.cells[i];
+      if (!c.mine && !c.open && this.state === 'playing') this.reveal(i);
+    }
+    return true;
+  }
   scan(i) {
     if (this.state !== 'playing' || this.scans <= 0 || !this.cells[i]) return false;
-    if (![i, ...this.neighbors(i)].some(n => !this.cells[n].open && !this.cells[n].scanned)) return false;
+    const targets = [i, ...this.neighbors(i)];
+    if (!targets.some(n => !this.cells[n].open && !this.cells[n].scanned)) return false;
     this.scans--;
-    for (const n of [i, ...this.neighbors(i)]) this.cells[n].scanned = true;
-    return true;
+    return this.resolveKnown(targets);
   }
   probe() {
     if (this.state !== 'playing' || this.probes <= 0) return false;
@@ -149,20 +170,11 @@ export class Game {
     }
     if (!targets.length) return false;
     this[m.resource]--;
+    if (id !== 'breach') return this.resolveKnown(targets);
     let opened = 0;
     for (const i of targets) {
       const c = this.cells[i];
-      if (id === 'breach') {
-        if (!c.open && opened < 5) { this.reveal(i); opened++; }
-      } else if (id === 'defuse') {
-        c.scanned = true;
-        if (c.mine) c.flag = true;
-        else this.reveal(i);
-      } else {
-        c.scanned = true;
-        if (id === 'hunter') c.flag = true;
-        if (id === 'audit' && !c.mine) c.flag = false;
-      }
+      if (!c.open && opened < 5) { this.reveal(i); opened++; }
     }
     return true;
   }
