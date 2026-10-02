@@ -6,10 +6,11 @@ const run = (extra = {}) => ({ rules: RULESET, id: 'run-1', at: 10000, level: 'n
 function disk() { const map = new Map(); return { getItem: key => map.get(key) ?? null, setItem: (key, value) => map.set(key, value) }; }
 test('current difficulties grow in size without dropping mine density', () => {
   const current = Object.values(LEVELS).filter(l => !l.legacy);
-  assert.deepEqual(current.map(l => [l.rows * l.cols, l.mines]), [[256, 48], [400, 90], [576, 144], [900, 225]]);
+  assert.deepEqual(current.map(l => [l.rows * l.cols, l.mines]), [[256, 48], [400, 90], [576, 144], [1024, 256]]);
   const density = current.map(l => l.mines / (l.rows * l.cols));
   assert.ok(density.every((value, i) => i === 0 || value >= density[i - 1]));
   assert.deepEqual([LEVELS.extreme.rows * LEVELS.extreme.cols, LEVELS.extreme.mines], [784, 220]);
+  assert.deepEqual([LEVELS.singularity.rows * LEVELS.singularity.cols, LEVELS.singularity.mines], [900, 225]);
 });
 test('results survive reload, duplicate saves do not inflate totals, completion replaces snapshots', () => {
   const storage = disk(); saveRecord(storage, run({ outcome: 'abandoned', progress: 30 }));

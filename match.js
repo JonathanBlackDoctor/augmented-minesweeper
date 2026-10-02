@@ -1,6 +1,6 @@
-import { MODULES } from './augments.js?v=6';
-import { LEVELS } from './game.js?v=6';
-export const ROOM_VERSION = 'mineshift-v5';
+import { MODULES } from './augments.js?v=7';
+import { LEVELS } from './game.js?v=7';
+export const ROOM_VERSION = 'mineshift-v6';
 export const ROOM_TTL = 2 * 60 * 60 * 1000;
 export const AUGMENTS = MODULES.map(m => m.id);
 export function roomCode(value) { return String(value).toUpperCase().replace(/[\s-]/g, ''); }
