@@ -34,13 +34,6 @@ button,select{touch-action:manipulation}
 .edition{display:none}
 #board.dense{gap:2px}
 #board.large .cell{font-size:clamp(10px,1.4vw,14px);border-radius:2px;border-bottom-width:1px}
-#precision{font-size:10px;white-space:nowrap;min-height:36px;padding:6px 9px}
-#precision[aria-pressed=true]{color:var(--lime)}
-.precision-inner{text-align:center;max-width:390px;margin:auto}
-#precision-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;max-width:310px;margin:16px auto}
-#precision-grid .cell{height:50px;min-width:44px;font-size:21px}
-#precision-grid .chosen{outline:2px solid var(--lime);outline-offset:1px}
-#precision-copy{font-size:12px}
 #record-bests{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:22px 0}
 .best-tile{display:flex;flex-direction:column;gap:8px;text-align:left;padding:16px;background:#242d32;border:1px solid #415044;border-radius:8px;color:var(--text)}
 .best-tile span,.best-tile small{font-size:11px;color:var(--muted)}
