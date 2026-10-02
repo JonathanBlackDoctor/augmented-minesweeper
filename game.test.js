@@ -31,14 +31,16 @@ test('shield consumes once, marks the mine, and second mine loses', () => {
   assert.equal(g.cells[mines[0]].flag, true); assert.equal(g.state, 'playing');
   assert.equal(g.reveal(mines[1]), 'lost');
 });
-test('scanner has finite charges and never reveals cells', () => {
+test('scanner resolves safe cells and flags mines with finite charges', () => {
   const g = new Game('normal', random(4)); g.augment('scan'); assert.equal(g.scan(20), false);
-  g.reveal(0); const opened = g.opened;
-  assert.equal(g.scan(61), true); assert.equal(g.cells.filter(c => c.scanned).length, 9);
-  assert.equal(g.opened, opened); assert.equal(g.scans, 1);
-  assert.equal(g.scan(61), false); assert.equal(g.scans, 1);
+  g.reveal(0); const target = g.cells.findIndex((c, i) => !c.open && [i, ...g.neighbors(i)].some(n => g.cells[n].mine));
+  const area = [target, ...g.neighbors(target)], before = g.opened;
+  assert.equal(g.scan(target), true); assert.ok(g.opened > before);
+  assert.ok(area.filter(i => g.cells[i].mine).every(i => g.cells[i].flag));
+  assert.ok(area.filter(i => !g.cells[i].mine).every(i => g.cells[i].open));
+  assert.equal(g.scans, 1); assert.equal(g.scan(target), false); assert.equal(g.scans, 1);
   const fresh = g.cells.findIndex(c => !c.open && !c.scanned);
-  g.scan(fresh); assert.equal(g.scans, 0); assert.equal(g.scan(10), false);
+  g.scan(fresh); assert.equal(g.scans, 0);
 });
 test('drone opens only safe cells and consumes charges', () => {
   for (let seed = 1; seed <= 30; seed++) {
