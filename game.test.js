@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { Game, LEVELS } from './game.js';
 function random(seed) { return () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; }; }
 
-test('all levels: 90 boards preserve mine counts, safe opening, and neighbor numbers', () => {
+test('all levels preserve mine counts, safe opening, and neighbor numbers', () => {
   for (const level of Object.keys(LEVELS)) for (let seed = 1; seed <= 30; seed++) {
     const g = new Game(level, random(seed));
     const first = seed * 13 % g.cells.length;

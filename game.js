@@ -1,8 +1,9 @@
-import { MODULES } from './augments.js?v=4';
+import { MODULES } from './augments.js?v=5';
 export const LEVELS = {
   easy: { name: '탐사', rows: 16, cols: 16, mines: 48 },
   normal: { name: '심층', rows: 20, cols: 20, mines: 90 },
   hard: { name: '심연', rows: 24, cols: 24, mines: 144 },
+  extreme: { name: '특이점', rows: 28, cols: 28, mines: 220 },
 };
 
 // Separate random streams keep identical multiplayer boards independent of abilities.

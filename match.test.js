@@ -17,7 +17,7 @@ test('flag mode does not open neighbors when flags do not match', () => {
   assert.equal(JSON.stringify(g.cells), before);
 });
 test('identical seeds and start cells produce identical multiplayer boards', () => {
-  for (const level of ['easy', 'normal', 'hard']) {
+  for (const level of ['easy', 'normal', 'hard', 'extreme']) {
     const a = new Game(level, seededRandom(78215)), b = new Game(level, seededRandom(78215));
     a.augment('shield'); b.augment('scan');
     const i = Math.floor(a.rows / 2) * a.cols + Math.floor(a.cols / 2);

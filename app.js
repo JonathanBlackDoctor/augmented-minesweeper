@@ -1,10 +1,10 @@
-import { Game, LEVELS, seededRandom, activateCell } from './game.js?v=4';
-import { RULESET, formatTime, parseChallenge } from './records.js?v=4';
-import { createRecordsUI } from './records-ui.js?v=4';
+import { Game, LEVELS, seededRandom, activateCell } from './game.js?v=5';
+import { RULESET, formatTime, parseChallenge } from './records.js?v=5';
+import { createRecordsUI } from './records-ui.js?v=5';
 const $ = id => document.getElementById(id);
 let run = null, lastRecord = null, pendingChallenge = null, precision = false;
 const records = createRecordsUI(() => run && !run.recorded ? run.id : '');
-import { MODULES as modules, augmentChoices } from './augments.js?v=4';
+import { MODULES as modules, augmentChoices } from './augments.js?v=5';
 let draftSeed = 0;
 let game, mode = 'reveal', pendingLevel = 'easy', earned = 0, picked = 0, startedAt = 0, elapsed = 0, finished = false, focusIndex = 0;
 let race = null, joining = false;
@@ -226,7 +226,7 @@ async function enterRace(code) {
   $('room-message').textContent = '대전 연결을 준비하고 있습니다…';
   let candidate;
   try {
-    const { OnlineRoom } = await import('./online.js?v=4');
+    const { OnlineRoom } = await import('./online.js?v=5');
     candidate = new OnlineRoom(room => {
       if (race?.client !== candidate || !room) return;
       race.room = room;

@@ -1,6 +1,6 @@
-import { LEVELS } from './game.js?v=4';
-import { MODULES } from './augments.js?v=4';
-import { STORAGE_KEY, MODES, OUTCOMES, loadArchive, saveRecord, mergeArchives, parseBackup, summarize, challengeHash, formatTime } from './records.js?v=4';
+import { LEVELS } from './game.js?v=5';
+import { MODULES } from './augments.js?v=5';
+import { STORAGE_KEY, MODES, OUTCOMES, loadArchive, saveRecord, mergeArchives, parseBackup, summarize, challengeHash, formatTime } from './records.js?v=5';
 const $ = id => document.getElementById(id);
 const date = at => new Date(at).toLocaleDateString('ko-KR');
 function download(blob, name) {
@@ -28,7 +28,7 @@ export function createRecordsUI(activeId) {
       return `<button class="best-tile" ${r ? `data-record="${r.id}"` : 'disabled'}><span>${level.name} · ${level.rows}×${level.cols}</span><strong>${r ? formatTime(r.seconds) : '—'}</strong><small>솔로 최고 기록</small></button>`;
     }).join('');
     $('record-list').innerHTML = visible.runs.filter(r => r.mode === mode).map(r => `<button class="history-row" data-record="${r.id}"><span><b>${LEVELS[r.level].name} · ${OUTCOMES[r.outcome]}</b><small>${date(r.at)} · ${r.picks.map(id => MODULES.find(m => m.id === id).name).join(' / ') || '증강 없음'}</small></span><span><b>${formatTime(r.seconds)}</b><small>${r.progress}% 탐사 ↗</small></span></button>`).join('') || '<p class="empty-loadout">아직 기록이 없어요. 한 판을 마치면 자동으로 남습니다.</p>';
-    const legacy = Object.entries(LEVELS).map(([id, l], i) => {
+    const legacy = Object.entries(LEVELS).slice(0, 3).map(([id, l], i) => {
       try { const v = disk.getItem(`mineshift-best-v1-${id}`); return v !== null && /^\d+$/.test(v) ? `${l.name} ${[9, 12, 16][i]}×${[9, 12, 16][i]} ${formatTime(Number(v))}` : ''; } catch { return ''; }
     }).filter(Boolean);
     $('legacy-records').textContent = legacy.length ? `이전 작은 보드 최고 기록: ${legacy.join(' · ')}` : '';
