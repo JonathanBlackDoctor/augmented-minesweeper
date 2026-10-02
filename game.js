@@ -5,7 +5,7 @@ export const LEVELS = {
   hard: { name: '심연', rows: 24, cols: 24, mines: 144 },
   // Kept for old records/challenge links created before the board rebalance.
   extreme: { name: '특이점 (이전)', rows: 28, cols: 28, mines: 220, legacy: true },
-  singularity: { name: '특이점', rows: 30, cols: 30, mines: 225 },
+  singularity: { name: '특이점', rows: 32, cols: 32, mines: 256 },
 };
 
 // Separate random streams keep identical multiplayer boards independent of abilities.
