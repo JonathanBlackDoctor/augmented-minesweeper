@@ -4,8 +4,12 @@ import { Game, LEVELS, seededRandom } from './game.js';
 import { RULESET, STORAGE_KEY, MAX_RUNS, emptyArchive, mergeArchives, saveRecord, loadArchive, parseBackup, summarize, challengeHash, parseChallenge, validRecord } from './records.js';
 const run = (extra = {}) => ({ rules: RULESET, id: 'run-1', at: 10000, level: 'normal', mode: 'solo', outcome: 'won', seconds: 100, progress: 100, seed: 123, first: 210, picks: ['scan', 'shield'], ...extra });
 function disk() { const map = new Map(); return { getItem: key => map.get(key) ?? null, setItem: (key, value) => map.set(key, value) }; }
-test('expanded boards include singularity and keep rising mine density', () => {
-  assert.deepEqual(Object.values(LEVELS).map(l => [l.rows * l.cols, l.mines]), [[256, 48], [400, 90], [576, 144], [784, 220]]);
+test('current difficulties grow in size without dropping mine density', () => {
+  const current = Object.values(LEVELS).filter(l => !l.legacy);
+  assert.deepEqual(current.map(l => [l.rows * l.cols, l.mines]), [[256, 48], [400, 90], [576, 144], [900, 225]]);
+  const density = current.map(l => l.mines / (l.rows * l.cols));
+  assert.ok(density.every((value, i) => i === 0 || value >= density[i - 1]));
+  assert.deepEqual([LEVELS.extreme.rows * LEVELS.extreme.cols, LEVELS.extreme.mines], [784, 220]);
 });
 test('results survive reload, duplicate saves do not inflate totals, completion replaces snapshots', () => {
   const storage = disk(); saveRecord(storage, run({ outcome: 'abandoned', progress: 30 }));

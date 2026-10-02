@@ -1,12 +1,12 @@
-import { Game, LEVELS, seededRandom, activateCell } from './game.js?v=5';
-import { RULESET, formatTime, parseChallenge } from './records.js?v=5';
-import { createRecordsUI } from './records-ui.js?v=5';
+import { Game, LEVELS, seededRandom, activateCell } from './game.js?v=6';
+import { RULESET, formatTime, parseChallenge } from './records.js?v=6';
+import { createRecordsUI } from './records-ui.js?v=6';
 const $ = id => document.getElementById(id);
-let run = null, lastRecord = null, pendingChallenge = null, precision = false;
+let run = null, lastRecord = null, pendingChallenge = null;
 const records = createRecordsUI(() => run && !run.recorded ? run.id : '');
-import { MODULES as modules, augmentChoices } from './augments.js?v=5';
+import { MODULES as modules, augmentChoices } from './augments.js?v=6';
 let draftSeed = 0;
-let game, mode = 'reveal', pendingLevel = 'easy', earned = 0, picked = 0, startedAt = 0, elapsed = 0, finished = false, focusIndex = 0;
+let game, mode = 'flag', pendingLevel = 'easy', earned = 0, picked = 0, startedAt = 0, elapsed = 0, finished = false, focusIndex = 0;
 let race = null, joining = false;
 const canAct = () => !finished && (!race || (race.started && race.client.connected && !race.pendingTerminal && !race.room?.outcome));
 const thresholds = [.25, .55, .8];
@@ -27,12 +27,10 @@ function start(level = 'easy', options = {}) {
   draftSeed = options.seed ?? crypto.getRandomValues(new Uint32Array(1))[0];
   game = new Game(level, seededRandom(draftSeed));
   run = { id: crypto.randomUUID(), seed: draftSeed, mode: options.race ? 'race' : options.challenge ? 'challenge' : 'solo', challenge: options.challenge || null, picks: [], recorded: false };
-  precision = matchMedia('(pointer: coarse)').matches && game.cols >= 20;
-  updatePrecision();
   earned = picked = elapsed = startedAt = 0;
   finished = false;
   focusIndex = 0;
-  setMode('reveal');
+  setMode('flag');
   $('timer').textContent = '00:00';
   $('board').style.setProperty('--cols', game.cols);
   $('board').classList.toggle('dense', true);
@@ -50,11 +48,11 @@ function start(level = 'easy', options = {}) {
 }
 function render() {
   [...$('board').children].forEach((button, i) => {
-    const c = game.cells[i], showMine = c.mine && (c.open || finished || c.scanned), wrong = finished && c.flag && !c.mine;
+    const c = game.cells[i], showMine = c.mine && (c.open || finished || (c.scanned && !c.flag)), wrong = finished && c.flag && !c.mine;
     button.className = ['cell', c.open ? 'open' : '', c.open && !c.count && !c.mine ? 'zero' : '', c.flag ? 'flag' : '', showMine ? (finished ? 'mine' : 'danger') : '', c.scanned ? 'scanned' : ''].filter(Boolean).join(' ');
     button.dataset.number = c.open && !c.mine ? c.count : '';
-    button.textContent = wrong ? '×' : showMine ? '✳' : c.flag ? '⚑' : c.open ? (c.count || '') : c.scanned ? '·' : '';
-    const label = wrong ? '잘못 표시한 깃발' : showMine ? '지뢰' : c.flag ? '깃발' : c.open ? (c.count ? `주변 지뢰 ${c.count}개` : '빈칸') : c.scanned ? '안전한 칸' : '닫힌 칸';
+    button.textContent = wrong ? '×' : c.flag ? '⚑' : showMine ? '✳' : c.open ? (c.count || '') : '';
+    const label = wrong ? '잘못 표시한 깃발' : c.flag ? '확정 지뢰 깃발' : showMine ? '지뢰' : c.open ? (c.count ? `주변 지뢰 ${c.count}개` : '빈칸') : '닫힌 칸';
     button.setAttribute('aria-label', `${Math.floor(i / game.cols) + 1}행 ${i % game.cols + 1}열, ${label}`);
   });
   $('mines').textContent = Math.max(0, game.mines - game.flags);
@@ -132,8 +130,8 @@ function actOnCell(i) {
   const power = modules.find(m => m.id === mode && m.target);
   if (power) {
     if (result === 'noop') { tell('이 칸에는 사용할 효과가 없어요. 횟수는 유지됩니다. 다른 칸을 선택하세요.'); return; }
-    setMode('reveal'); afterAction('open');
-    if (!finished) tell(`${power.name} 사용 완료. ${power.id === 'breach' ? '안전한 칸을 열었어요.' : '✳는 지뢰, 초록 점은 안전한 칸이에요.'}`);
+    setMode('flag'); afterAction('open');
+    if (!finished) tell(`${power.name} 사용 완료. 확인된 안전 칸은 열고 지뢰는 깃발로 확정했어요.`);
     return;
   }
   if (result === 'flag') { render(); return; }
@@ -141,8 +139,7 @@ function actOnCell(i) {
 }
 $('board').addEventListener('click', e => {
   const button = e.target.closest('[data-index]'); if (!button || !canAct()) return;
-  const i = Number(button.dataset.index);
-  if (precision && e.detail !== 0) openPrecision(i); else actOnCell(i);
+  actOnCell(Number(button.dataset.index));
 });
 $('board').addEventListener('contextmenu', e => {
   const button = e.target.closest('[data-index]'); if (!button) return;
@@ -164,10 +161,10 @@ $('loadout').addEventListener('click', e => {
   const button = e.target.closest('[data-power]'); if (!button || button.disabled || !canAct()) return;
   const power = modules.find(m => m.id === button.dataset.power);
   if (power.target) {
-    setMode(mode === power.id ? 'reveal' : power.id);
-    tell(mode === 'reveal' ? '탐색 모드로 돌아왔어요.' : `${power.name}: ${power.short}. 칸을 선택하세요. 탐색 버튼으로 취소할 수 있어요.`);
+    setMode(mode === power.id ? 'flag' : power.id);
+    tell(mode === 'flag' ? '깃발 모드로 돌아왔어요.' : `${power.name}: ${power.short}. 칸을 선택하세요. 깃발 버튼으로 취소할 수 있어요.`);
   } else {
-    setMode('reveal');
+    setMode('flag');
     if (game.usePower(power.id)) { afterAction('open'); if (!finished) tell(`${power.name} 사용 완료. ${power.short}.`); }
     else tell('효과를 적용할 칸이 없어요. 사용 횟수는 유지됩니다.');
   }
@@ -188,7 +185,7 @@ function fitBoard() {
   const wrap = document.querySelector('.board-wrap');
   const style = getComputedStyle(wrap);
   const width = wrap.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
-  const height = wrap.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom) - $('start-hint').offsetHeight;
+  const height = wrap.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
   if (width > 0 && height > 0) $('board').style.setProperty('--board-size', `${Math.floor(Math.min(width, height))}px`);
 }
 new ResizeObserver(fitBoard).observe(document.querySelector('.board-wrap'));
@@ -226,7 +223,7 @@ async function enterRace(code) {
   $('room-message').textContent = '대전 연결을 준비하고 있습니다…';
   let candidate;
   try {
-    const { OnlineRoom } = await import('./online.js?v=5');
+    const { OnlineRoom } = await import('./online.js?v=6');
     candidate = new OnlineRoom(room => {
       if (race?.client !== candidate || !room) return;
       race.room = room;
@@ -346,29 +343,6 @@ function recordRun(outcome, final = true) {
   if (final) { run.recorded = true; lastRecord = record; }
   return saved;
 }
-function updatePrecision() {
-  $('precision').textContent = `정밀 터치 ${precision ? 'ON' : 'OFF'}`;
-  $('precision').setAttribute('aria-pressed', String(precision));
-}
-function openPrecision(index) {
-  const startRow = Math.max(0, Math.min(game.rows - 5, Math.floor(index / game.cols) - 2));
-  const startCol = Math.max(0, Math.min(game.cols - 5, index % game.cols - 2));
-  const buttons = [];
-  for (let r = startRow; r < startRow + 5; r++) for (let c = startCol; c < startCol + 5; c++) {
-    const i = r * game.cols + c, button = $('board').children[i].cloneNode(true);
-    button.tabIndex = 0; button.classList.toggle('chosen', i === index); buttons.push(button);
-  }
-  $('precision-grid').replaceChildren(...buttons);
-  const action = mode === 'flag' ? '깃발 / 숫자 주변 열기' : modules.find(m => m.id === mode)?.name || '탐색';
-  $('precision-copy').textContent = `${startRow + 1}~${startRow + 5}행 · ${startCol + 1}~${startCol + 5}열 / ${action}`;
-  $('precision-dialog').showModal();
-}
-$('precision').onclick = () => { precision = !precision; updatePrecision(); };
-$('close-precision').onclick = () => $('precision-dialog').close();
-$('precision-grid').onclick = event => {
-  const button = event.target.closest('[data-index]'); if (!button) return;
-  $('precision-dialog').close(); actOnCell(Number(button.dataset.index));
-};
 $('accept-challenge').onclick = () => {
   if (!pendingChallenge || race) return;
   const challenge = pendingChallenge; pendingChallenge = null;
