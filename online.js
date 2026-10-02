@@ -1,6 +1,6 @@
-import './vendor/peerjs.min.js?v=5';
-import { LEVELS } from './game.js?v=5';
-import { newRoom, joinRoom, readyRoom, settleRoom, roomCode, validCode, ROOM_VERSION } from './match.js?v=5';
+import './vendor/peerjs.min.js?v=6';
+import { LEVELS } from './game.js?v=6';
+import { newRoom, joinRoom, readyRoom, settleRoom, roomCode, validCode, ROOM_VERSION } from './match.js?v=6';
 
 // The host serializes room changes; clients send only their own commands.
 // PeerServer brokers WebRTC. No Firebase project is accessed.
