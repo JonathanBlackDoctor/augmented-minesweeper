@@ -24,15 +24,14 @@ test('drafts offer three unique candidates, vary and are identical for both play
   }
   assert.equal(seen.size, 10); assert.ok(offers.size > 50);
 });
-test('row and column radar cover exactly one line and repeat use is free', () => {
+test('row and column radar auto-open safe cells and auto-flag mines', () => {
   for (const id of ['row', 'column']) {
-    const g = board(); g.augment(id); const before = g.opened, i = 8 * g.cols + 8;
+    const g = board(); g.augment(id); const i = 8 * g.cols + 8;
+    const line = g.cells.map((_, n) => n).filter(n => id === 'row' ? Math.floor(n / g.cols) === 8 : n % g.cols === 8);
     assert.equal(activateCell(g, i, id), id);
-    for (let n = 0; n < g.cells.length; n++) {
-      const inLine = id === 'row' ? Math.floor(n / g.cols) === 8 : n % g.cols === 8;
-      assert.equal(g.cells[n].scanned, inLine && !g.cells[n].open);
-    }
-    assert.equal(g.opened, before); g.augment(id);
+    assert.ok(line.filter(n => g.cells[n].mine).every(n => g.cells[n].flag));
+    assert.ok(line.filter(n => !g.cells[n].mine).every(n => g.cells[n].open));
+    g.augment(id);
     assert.equal(g.usePower(id, i), false); assert.equal(g[MODULES.find(m => m.id === id).resource], 1);
   }
 });
@@ -58,8 +57,8 @@ test('audit preserves correct flags, removes wrong flags and confirms both', () 
   const mine = g.cells.findIndex(c => c.mine), safe = g.cells.findIndex(c => !c.mine && !c.open);
   g.flag(mine); g.flag(safe); const before = g.opened;
   assert.equal(g.usePower('audit'), true); assert.equal(g.cells[mine].flag, true);
-  assert.equal(g.cells[safe].flag, false); assert.equal(g.cells[safe].scanned, true);
-  assert.equal(g.opened, before); assert.equal(g.audits, 1);
+  assert.equal(g.cells[safe].flag, false); assert.equal(g.cells[safe].open, true);
+  assert.ok(g.opened > before); assert.equal(g.audits, 1);
   assert.equal(g.usePower('audit'), false); assert.equal(g.audits, 1);
 });
 test('breach opens safe neighbors without harming flags or mines and can finish a board', () => {
@@ -72,12 +71,12 @@ test('breach opens safe neighbors without harming flags or mines and can finish 
   g.augment('breach'); assert.equal(g.usePower('breach', last), false); assert.equal(g.breaches, 1);
   g.flag(last); assert.equal(g.usePower('breach', last), true); assert.equal(g.state, 'won');
 });
-test('echo marks at most five frontier cells without opening or flagging them', () => {
-  const g = board(); g.augment('echo'); const before = g.opened;
+test('echo resolves up to five frontier cells into opens or flags', () => {
+  const g = board(); g.augment('echo');
+  const frontierBefore = g.cells.map((c, i) => !c.open && !c.scanned && g.neighbors(i).some(n => g.cells[n].open) ? i : -1).filter(i => i >= 0).slice(0, 5);
   assert.equal(g.usePower('echo'), true);
-  const marked = g.cells.map((c, i) => c.scanned ? i : -1).filter(i => i >= 0);
-  assert.equal(marked.length, 5); assert.ok(marked.every(i => !g.cells[i].open && g.neighbors(i).some(n => g.cells[n].open)));
-  assert.equal(g.opened, before); assert.equal(g.flags, 0); assert.equal(g.echoes, 1);
+  assert.ok(frontierBefore.every(i => g.cells[i].mine ? g.cells[i].flag : g.cells[i].open));
+  assert.equal(g.echoes, 1);
 });
 test('all powers reject invalid targets and terminal boards without spending charges', () => {
   for (const m of MODULES) {
