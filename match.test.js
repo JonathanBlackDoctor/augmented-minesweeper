@@ -2,6 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Game, seededRandom, activateCell } from './game.js';
 import { newRoom, joinRoom, readyRoom, settleRoom, roomCode, validCode, ROOM_TTL } from './match.js';
+test('first click opens even in flag mode', () => {
+  const game = new Game('normal', seededRandom(10));
+  assert.equal(activateCell(game, 210, 'flag'), 'open');
+  assert.equal(game.started, true); assert.equal(game.cells[210].open, true); assert.equal(game.flags, 0);
+});
 test('flag mode opens a correctly flagged number, but flags a closed cell', () => {
   const game = new Game('normal', seededRandom(10)); game.reveal(0);
   const index = game.cells.findIndex((c, i) => c.open && c.count && game.neighbors(i).some(n => !game.cells[n].mine && !game.cells[n].open));
@@ -17,7 +22,7 @@ test('flag mode does not open neighbors when flags do not match', () => {
   assert.equal(JSON.stringify(g.cells), before);
 });
 test('identical seeds and start cells produce identical multiplayer boards', () => {
-  for (const level of ['easy', 'normal', 'hard', 'extreme']) {
+  for (const level of ['easy', 'normal', 'hard', 'extreme', 'singularity']) {
     const a = new Game(level, seededRandom(78215)), b = new Game(level, seededRandom(78215));
     a.augment('shield'); b.augment('scan');
     const i = Math.floor(a.rows / 2) * a.cols + Math.floor(a.cols / 2);
