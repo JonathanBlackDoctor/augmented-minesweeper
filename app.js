@@ -1,10 +1,10 @@
-import { Game, LEVELS, seededRandom, activateCell } from './game.js?v=6';
-import { RULESET, formatTime, parseChallenge } from './records.js?v=6';
-import { createRecordsUI } from './records-ui.js?v=6';
+import { Game, LEVELS, seededRandom, activateCell } from './game.js?v=7';
+import { RULESET, formatTime, parseChallenge } from './records.js?v=7';
+import { createRecordsUI } from './records-ui.js?v=7';
 const $ = id => document.getElementById(id);
 let run = null, lastRecord = null, pendingChallenge = null;
 const records = createRecordsUI(() => run && !run.recorded ? run.id : '');
-import { MODULES as modules, augmentChoices } from './augments.js?v=6';
+import { MODULES as modules, augmentChoices } from './augments.js?v=7';
 let draftSeed = 0;
 let game, mode = 'flag', pendingLevel = 'easy', earned = 0, picked = 0, startedAt = 0, elapsed = 0, finished = false, focusIndex = 0;
 let race = null, joining = false;
@@ -223,7 +223,7 @@ async function enterRace(code) {
   $('room-message').textContent = '대전 연결을 준비하고 있습니다…';
   let candidate;
   try {
-    const { OnlineRoom } = await import('./online.js?v=6');
+    const { OnlineRoom } = await import('./online.js?v=7');
     candidate = new OnlineRoom(room => {
       if (race?.client !== candidate || !room) return;
       race.room = room;
@@ -293,7 +293,7 @@ function leaveRace() {
 }
 function openRoomDialog() {
   if (race) { tell('오른쪽 대전 패널에서 방 상태를 확인하세요.'); return; }
-  $('room-level').value = game.level;
+  $('room-level').value = LEVELS[game.level]?.legacy ? 'singularity32' : game.level;
   $('room-dialog').showModal();
 }
 $('multiplayer').onclick = $('open-room-dialog').onclick = openRoomDialog;
